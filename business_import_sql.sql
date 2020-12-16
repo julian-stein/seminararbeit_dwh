@@ -1,4 +1,3 @@
--- TODO: unnest categories and drop column
 ---------------- CREATE TABLES -----------------------------------------------------------------------------------------
 create table staging.business_import_json(doc json);
 
@@ -27,3 +26,19 @@ insert into staging.business_import
 select businesses.*
 from staging.business_import_json
   cross join lateral json_populate_recordset(null::staging.business_import, doc) as businesses;
+
+---------------- UNNEST ARRAYS TO DEDICATED RELATIONS ------------------------------------------------------------------
+-- Create separate table for business categories
+
+create table staging.categories (
+    business_id varchar(255),
+    category varchar(255)
+);
+
+insert into staging.categories
+select businesses.business_id, unnest(businesses.categories) from staging.business_import as businesses;
+
+
+---------------- DROP CONVERTED COLUMNS --------------------------------------------------------------------------------
+alter table staging.business_import
+    drop column categories;

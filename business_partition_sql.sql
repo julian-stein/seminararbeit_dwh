@@ -1,5 +1,4 @@
--- TODO: categories in core ueberfuehren und partitionieren
----------------- CREATE TABLE -----------------------------------------------------------------------------------------
+---------------- CREATE TABLES ------------------------------------------------------------------------------------------
 create table core.business(
     business_id varchar(255),
     name varchar(255),
@@ -16,7 +15,12 @@ create table core.business(
     hours jsonb
 ) partition by list(state);
 
----------------- CREATE REGION PARTITIONS ------------------------------------------------------------------------------
+create table core.categories (
+    business_id varchar(255),
+    category varchar(255)
+) partition by hash(business_id);
+
+---------------- CREATE BUSINESS REGION PARTITIONS ---------------------------------------------------------------------
 create table core.business_north partition of core.business
     for values in ('AK', 'AB', 'BC', 'MB', 'NL', 'NS', 'NB', 'ON', 'PE', 'QC', 'SK', 'NT', 'YT', 'NU') partition by range(stars);
 
@@ -37,7 +41,7 @@ create table core.business_islands_oversea partition of core.business
 
 create table core.business_default partition of core.business default partition by range(stars);
 
----------------- CREATE STAR SUBPARTITIONS -----------------------------------------------------------------------------
+---------------- CREATE BUSINESS STAR SUBPARTITIONS --------------------------------------------------------------------
 CREATE TABLE core.business_north_1to2stars PARTITION OF core.business_north
     FOR VALUES FROM (1.0) TO (2.0);
 CREATE TABLE core.business_north_2to3stars PARTITION OF core.business_north
@@ -101,7 +105,17 @@ CREATE TABLE core.business_default_3to4stars PARTITION OF core.business_default
 CREATE TABLE core.business_default_4to5stars PARTITION OF core.business_default
     FOR VALUES FROM (4.0) TO (5.1);
 
----------------- INSERT DATA FROM STAGING -----------------------------------------------------------------------------
+---------------- CREATE CATEGORIES HASH PARTITIONS ---------------------------------------------------------------------
+CREATE TABLE core.categories_h0 PARTITION OF core.categories FOR VALUES WITH (modulus 4, remainder 0);
+CREATE TABLE core.categories_h1 PARTITION OF core.categories FOR VALUES WITH (modulus 4, remainder 1);
+CREATE TABLE core.categories_h2 PARTITION OF core.categories FOR VALUES WITH (modulus 4, remainder 2);
+CREATE TABLE core.categories_h3 PARTITION OF core.categories FOR VALUES WITH (modulus 4, remainder 3);
+
+---------------- INSERT DATA FROM STAGING ------------------------------------------------------------------------------
 insert into core.business
 select business_id, name, address, city, state, postal_code, latitude, longitude, stars, review_count, is_open, attributes, hours
-from staging.business_import
+from staging.business_import;
+
+insert into core.categories
+select business_id, category
+from staging.categories;
