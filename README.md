@@ -1,4 +1,4 @@
-# seminararbeit_dwh
+# Seminararbeit II DWH - Partitioning in PostgreSQL
 (C) Julian Stein
 
 ## Docker implementation
